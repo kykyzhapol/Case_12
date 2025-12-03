@@ -78,6 +78,7 @@ def is_hidden_windows_file(path: PathString) -> bool:
     pass
 
 
+
 #print(is_windows_os())
 #way = Path('\Program1\example.txt')
 #print(validate_windows_path(way), way.parts)
