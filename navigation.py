@@ -72,7 +72,9 @@ def move_up(current_path: str) -> str:
     # TODO: Использовать utils.get_parent_path() для получения родителя
     # Проверить валидность нового пути через utils.validate_windows_path()
     # Учесть переход между дисками
+    # Получение родительской папки
     path = utils.get_parent_path(current_path)
+    # Проверка пути на валидность
     bools = utils.validate_windows_path(path)[0]
     if bools:
         return path
@@ -83,7 +85,9 @@ def move_down(current_path: str, target_dir: str) -> Tuple[bool, str]:
     # TODO: Проверить что target_dir существует через utils.safe_windows_listdir()
     # Сформировать новый путь и проверить через utils.validate_windows_path()
     # Вернуть (True, новый_путь) при успехе, (False, текущий_путь) при ошибке
+    # Создание пути до указонного файла
     path = current_path + '\\' + target_dir
+    # Проверка на существование пути
     if path in utils.safe_windows_listdir(current_path):
         return True, path
     else:
@@ -96,8 +100,11 @@ def get_windows_special_folders() -> Dict[str, str]:
     # {'Desktop': 'C:\\Users\\...', 'Documents': '...', 'Downloads': '...'}
     # Использовать os.environ для получения USERPROFILE и других переменных
     special_folders = {}
+    # Создание пути к пользователю
     user = os.environ.get('USERPROFILE')
+    # создание словаря с инормацией о всех объектак в каталоге пользователя
     list1 = list_directory(user)
+    # Создание словаря со всеми особыми объектами
     for path_1 in list1[1]:
         special_folders[path_1['name']] = os.path.join(user, path_1['name'])
 
