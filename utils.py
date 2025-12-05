@@ -27,11 +27,12 @@ def validate_windows_path(path: PathString) -> Tuple[bool, str]:
     # - Проверка существования пути
     # Вернуть (True, '') если путь валиден, (False, 'сообщение об ошибке') если нет
     # Checking on exist.
-    if not path.exists():
+    path_obj = Path(path)
+    if not path_obj.exists():
         return False, 'File is not exist'
     # Checking on prohibited symbols.
-    for part in path.parts:
-        if re.search(r'[/:*?\'<>|]', part):
+    for part in path_obj.parts:
+        if re.search(r'[/*?\'<>|]', part):
             return False, 'Prohibited symbols'
     # Len check.
     if len(str(path)) > 260:
@@ -99,8 +100,12 @@ def safe_windows_listdir(path: PathString) -> List[str]:
     try:
         for child in path_obj.iterdir():
             exit_list.append(str(child))
-    except (PermissionError, FileNotFoundError, OSError):
-        return []
+    except PermissionError:
+        return 1
+    except FileNotFoundError:
+        return 2
+    except OSError:
+        return 3
     return exit_list
 
 
@@ -126,7 +131,6 @@ def is_hidden_windows_file(path: PathString) -> bool:
     # Использовать os.stat или ctypes для проверки атрибутов Windows
     atr = ctypes.windll.kernel32.GetFileAttributesW(str(path))
     if atr & 2:
-        print(atr)
         return True
     return False
 
