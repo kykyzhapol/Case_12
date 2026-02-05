@@ -105,16 +105,97 @@ def find_windows_system_files() -> List[str]:
 
 
 def search_menu_handler(current_path: str) -> bool:
-    """Обработчик меню поиска для Windows"""
+    """Обработчик меню поиска для Windows
+    Поиск файла по шаблону
+    По списку расширений
+    Поиск крупных файлов
+    Поиск системных файлов
+    """
     # TODO: Реализовать интерактивное меню используя ВСЕ функции поиска
     # Использовать match case для навигации по меню
     # Интегрировать функции из analysis для показа статистики поиска
     # Вернуть True если пользователь хочет продолжить поиск
-    pass
+    print('Меню поиска:'
+    '1. Поиск файлов по имени/шаблону'
+    '2. Поиск по расширению файла'
+    '3. Поиск крупных файлов'
+    '4. Поиск системных файлов Windows'
+    '5. Статистика текущей директории'
+    '0. Не хочу продолжать поиск')
+    choice = input('\nВыберите действие (0-7):')
+
+    match choice:
+        case 1:
+            print('Поиск файлов по имени/шаблону\n'
+                  'Доступные шаблоны:'
+                  '* - любое количество символов'
+                  '? - один любой символ'
+                  'Примеры: *.txt, document?.docx, report_*.pdf')
+            pattern = input('\nВведите шаблон для поиска: ')
+            case_sensitive = input('Чувствительность к регистру? (y/N): ')
+            file_count = find_files_windows(pattern, current_path, case_sensitive == 'y')
+            print(f'Результаты поиска:'
+                  f'{file_count}'
+                  f'')#Докинуть статистику
+        case 2:
+            print('Поиск по расширению файла'
+                  'Пример ввода: .txt, .exe, .pdf')
+            ext = input('добавьте расширения через запятую').split(',')
+            print(f'Результаты поиска:'
+                  f'find_by_windows_extension(ext, current_path)'
+                  f'')#Докинуть статистику
+        case 3:
+            print('Поиск крупных файлов')
+            min_size = input('Минимальный размер файлов в MB'
+                             '(по умолчанию 10)')
+            min_size_mb = float(min_size) if min_size else 10.0
+            print(f'Файлы размером больше {min_size_mb} MB:')
+            large_files = find_large_files_windows(min_size_mb, current_path)
+            print(large_files.sort(key=lambda x: x['size_mb'], reverse=True))
+            # Добавить инфо
+        case 4:
+            print('Поиск системных файлов'
+                  '\n !!!ВНИМАНИЕ!!!'
+                  'Системные файлы Windows важны для работы ОС.'
+                  'Не изменяйте и не удаляйте их без необходимости!')
+            try:
+                system_files = find_windows_system_files(current_path)
+                if system_files:
+                    print(f'Найденные системные файлы:'
+                          f'{system_files}')
+                else:
+                    print('Системные файлы не найдены в текущей директории')
+            except Exception as e:
+                print(f'Ошибка при поиске: {e}')
+        case 5:
+            print(f'Статистика текущей директории:'
+                  f'{show_windows_directory_stats(current_path)}')
+        case 0:
+            confirm = input('Вы уверены, что хотите выйти? (y/N):')
+            if confirm == 'y': print('До свидания!')
+            return False
+    return True
+
 
 def format_windows_search_results(results: List, search_type: str) -> None:
-    """Форматированный вывод результатов поиска для Windows"""
+    import analysis as al
+    import utils as ut
+    """Форматированный вывод результатов поиска для Windows
+    Допустим, список это список директорий???
+    """
     # TODO: Красиво отформатировать вывод в зависимости от типа поиска
     # Использовать utils.format_size() для размеров
     # Показывать атрибуты файлов через analysis.get_windows_file_attributes_stats()
-    pass
+    print('Результаты поиска:'
+          '='*60)
+    for result in results:
+        print(f'Путь - {result}')
+        if al.count_files(result)[0]:
+            print(f'Количество файлов = {al.count_files(result)[1]}')
+        if al.count_bytes(result)[0]:
+            print(f'Размер файлов={ut.format_size(al.count_bytes(result)[1])}')
+        print('Атрибуты:')
+        attributes = al.get_windows_file_attributes_stats(result)
+        print(f'hidden = {attributes.get('hidden', 0)}')
+        print(f'system = {attributes.get('system', 0)}')
+        print(f'readonly = {attributes.get('readonly', 0)}')
