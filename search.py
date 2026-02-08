@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Tuple
 import utils  # Функции архитектора
 import navigation  # Функции инженера навигации
 import analysis
+from analysis import show_windows_directory_stats
 
 
 def find_files_windows(pattern: str, path: str, case_sensitive: bool = False) -> List[str]:
@@ -37,7 +38,6 @@ def find_files_windows(pattern: str, path: str, case_sensitive: bool = False) ->
     return name_list
 
 
-
 def find_by_windows_extension(extensions: List[str], path: str) -> List[str]:
     """Поиск файлов по списку расширений Windows"""
     # TODO: Использовать analysis.analyze_windows_file_types() для оптимизации
@@ -61,6 +61,7 @@ def find_by_windows_extension(extensions: List[str], path: str) -> List[str]:
 
     pass
 
+
 def find_large_files_windows(min_size_mb: float, path: str) -> List[Dict[str, Any]]:
     """Поиск крупных файлов в Windows"""
     # TODO: Использовать analysis.count_bytes() для расчета размеров
@@ -77,6 +78,7 @@ def find_large_files_windows(min_size_mb: float, path: str) -> List[Dict[str, An
                     'type' : navigation.list_directory(path)[1][0]['type']}
             list_info.append(info)
     return list_info
+
 
 def find_windows_system_files() -> List[str]:
     """Поиск системных файлов Windows"""
