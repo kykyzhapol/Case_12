@@ -19,7 +19,12 @@ def check_windows_environment() -> bool:
     """Проверка что программа запущена в Windows"""
     # TODO: Использовать utils.is_windows_os()
     # Если не Windows - вывести сообщение и завершить программу
-    pass
+
+    if utils.is_windows_os():
+        return True
+    else:
+        print('Не подходящяя операционная система')
+        return False
 
 
 def display_windows_banner() -> None:
@@ -59,23 +64,44 @@ def display_main_menu(current_path: str) -> None:
           f'Доступные диски: {available_d}')
     while search.search_menu_handler(current_path):
         search.search_menu_handler(current_path)
+        
 
-def handle_windows_navigation(command: str, current_path: str) -> str:
+def handle_windows_navigation(current_path: str) -> str:
     """Обработка команд навигации в Windows"""
     # TODO: Использовать navigation.move_up() и navigation.move_down()
     # Обрабатывать смену дисков через navigation.list_available_drives()
-    pass
+    command = int(input('1. Перейти к родительскому коталогу\n'
+                        '2. Перейти в следующий каталог\n'
+                        '3. Сменить диск'))
+    match command:
+        case 1:
+            new_path = navigation.move_up(current_path)
+        case 2:
+            cataloge = input('Укажите каталог')
+            new_path = navigation.move_down(current_path, cataloge)
+        case 3:
+            print(f'Доступные диски: {navigation.list_directory()}')
+            directory = input('Укажите диск')
+            match len(directory):
+                case 1:
+                    new_path = directory + ':'
+                case 2:
+                    new_path = directory
+    return new_path
 
-def handle_windows_analysis(command: str, current_path: str) -> None:
+
+def handle_windows_analysis(current_path: str) -> None:
     """Обработка команд анализа Windows файловой системы"""
     # TODO: Использовать analysis.show_windows_directory_stats()
     # и другие функции анализа
-    pass
+    analysis.show_windows_directory_stats(current_path)
+    
 
-def handle_windows_search(command: str, current_path: str) -> None:
+def handle_windows_search(current_path: str) -> None:
     """Обработка команд поиска в Windows"""
     # TODO: Использовать search.search_menu_handler()
-    pass
+    search.search_menu_handler(current_path)
+    
 
 def run_windows_command(command: str, current_path: str) -> str:
     """Главный обработчик команд с использованием match case"""
