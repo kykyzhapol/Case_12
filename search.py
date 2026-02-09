@@ -124,7 +124,7 @@ def search_menu_handler(current_path: str) -> bool:
     '4. Поиск системных файлов Windows'
     '5. Статистика текущей директории'
     '0. Не хочу продолжать поиск')
-    choice = input('\nВыберите действие (0-7):')
+    choice = int(input('\nВыберите действие (0-7):'))
 
     match choice:
         case 1:
