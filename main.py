@@ -1,11 +1,14 @@
 '''
 Sergey's task: 2,3,7,8
-Gleb's task - rest of them
-2, 3 - done
+
+Gleb's task - rest of them (done)
+2, 3, 7 - done
+
 '''
 
 import os
 import sys
+from random import choice
 from typing import NoReturn
 
 from matplotlib.style.core import available
@@ -87,6 +90,9 @@ def handle_windows_navigation(current_path: str) -> str:
                     new_path = directory + ':'
                 case 2:
                     new_path = directory
+        case _:
+            print('Unexpected mistake')
+            return current_path
     return new_path
 
 
@@ -111,7 +117,24 @@ def run_windows_command(command: str, current_path: str) -> str:
     # - analysis для команд 2, 4
     # - search для команды 3
     # Вернуть обновленный текущий путь
-    pass
+    print('1 - навигация'
+          '2 - анализ'
+          '3 - поиск')
+    try:
+        choice_command = int(input('Что вы хотите сделать?'))
+    except ValueError:
+        return 'ValueError'
+    match choice_command:
+        case 1:
+            return handle_windows_navigation(current_path)
+        case 2:
+            handle_windows_analysis(current_path)
+            return current_path
+        case 3:
+            handle_windows_search(current_path)
+            return current_path
+        case _:
+            return 'Unexpected mistake'
 
 def main() -> NoReturn:
     """Главная функция программы для Windows"""
