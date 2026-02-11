@@ -7,134 +7,142 @@ import re
 
 PathString = Union[str, Path]
 
+# Windows API constants
+INVALID_FILE_ATTRIBUTES = 0xFFFFFFFF
+FILE_ATTRIBUTE_HIDDEN = 0x2
+
 
 def is_windows_os() -> bool:
-    '''Проверка что программа запущена на Windows'''
-    # TODO: Вернуть True если операционная система - Windows
-    # Использовать platform.system()
-    if platform.system() == 'Windows':
-        return True
-    return False
+    """Check if the program is running on Windows."""
+    return platform.system() == 'Windows'
 
 
 def validate_windows_path(path: PathString) -> Tuple[bool, str]:
-    '''Проверка корректности Windows пути
-    Пока работает только с Path форматом
-    '''
-    # TODO: Проверить путь на соответствие правилам Windows
-    # - Запрещенные символы: / : * ? ' < > |
-    # - Длина пути (максимум 260 символов для обычных путей)
-    # - Проверка существования пути
-    # Вернуть (True, '') если путь валиден, (False, 'сообщение об ошибке') если нет
-    # Checking on exist.
+    """
+    Validate a Windows path for correctness.
+
+    Checks:
+    - Existence of the path (file or directory must exist).
+    - No prohibited characters in any path component except the drive letter.
+      Prohibited characters: < > : " | ? * (colon is only allowed as drive letter).
+    - Total path length <= 260 characters (standard Windows limit).
+
+    Returns:
+        Tuple[bool, str]: (True, '') if valid, else (False, error message).
+    """
     path_obj = Path(path)
+    path_str = str(path_obj)
+
+    # 1. Check existence
     if not path_obj.exists():
-        return False, 'File is not exist'
-    # Checking on prohibited symbols.
-    for part in path_obj.parts:
-        if re.search(r'[/*?\'<>|]', part):
-            return False, 'Prohibited symbols'
-    # Len check.
-    if len(str(path)) > 260:
-        return False, 'Too long way - maximum 260 characters'
+        return False, 'Path does not exist.'
+
+    # 2. Check for prohibited characters in each path component (excluding drive)
+    #    Drive letter (e.g. "C:") is allowed; colon elsewhere is prohibited.
+    drive = path_obj.drive  # e.g. "C:" or ""
+    parts = path_obj.parts
+
+    # Allowed colon only in drive part
+    if drive:
+        # Validate drive format: single letter + colon, optionally followed by separator
+        if not re.match(r'^[a-zA-Z]:[\\/]?$', drive):
+            return False, f'Invalid drive specification: {drive}'
+        # Remove drive from the list of parts to validate separately
+        other_parts = parts[1:] if len(parts) > 1 else []
+    else:
+        other_parts = parts
+
+    # Prohibited characters in file/directory names (Windows)
+    # Note: forward slash '/' is a valid separator and will be normalized by Path,
+    #       so we do not treat it as an invalid character here.
+    invalid_chars_pattern = r'[<>:"|?*]'  # double quote, colon, pipe, question, star, etc.
+    for part in other_parts:
+        if re.search(invalid_chars_pattern, part):
+            return False, f'Prohibited character(s) in "{part}".'
+        # Control characters (0-31) are also invalid
+        if any(ord(c) < 32 for c in part):
+            return False, f'Control character in "{part}".'
+
+    # 3. Check total path length (max 260 characters)
+    if len(path_str) >= 260:
+        return False, 'Path length exceeds 260 characters.'
+
     return True, ''
 
 
 def format_size(size_bytes: int) -> str:
-    '''Форматирование размера файла в читаемом виде для Windows'''
-    # TODO: Преобразовать байты в удобочитаемый формат
-    # Пример: 1024 -> '1.0 KB', 1500000 -> '1.4 MB'
-    # Учесть что в Windows используются единицы: KB, MB, GB (не KiB, MiB)
+    """
+    Convert file size in bytes to a human-readable string (Windows style).
+
+    Uses binary units: KB = 1024, MB = 1024**2, GB = 1024**3.
+    Examples:
+        1024 -> '1.0 KB'
+        1500000 -> '1.4 MB'
+    """
     if size_bytes < 1024:
         return f'{size_bytes} B'
-    if size_bytes < (1024 ** 2):
-        return f'{round(size_bytes / 1024, 1)} KB'
-    if size_bytes < (1024 ** 3):
-        return f'{round(size_bytes / 1024 ** 2, 1)} MB'
-    return f'{round(size_bytes / 1024 ** 3, 1)} GB'
+    if size_bytes < 1024 ** 2:
+        return f'{size_bytes / 1024:.1f} KB'
+    if size_bytes < 1024 ** 3:
+        return f'{size_bytes / 1024 ** 2:.1f} MB'
+    return f'{size_bytes / 1024 ** 3:.1f} GB'
 
 
 def get_parent_path(path: PathString) -> str:
-    '''Получение родительского каталога с учетом Windows путей'''
-    # TODO: Вернуть путь к родительскому каталогу
-    # Учесть особенности: C:\ → C:\, C:\Users → C:\
-    # Использовать os.path.dirname с учетом Windows
-    path_obj = Path(path)
+    """
+    Return the parent directory of the given path, with Windows‑specific handling.
+
+    For root directories (e.g. 'C:\\') the parent is the same directory.
+    For relative paths, returns '.' if no meaningful parent exists.
+    If an error occurs, returns an empty string.
+    """
     try:
-        # Получаем родителя
+        path_obj = Path(path)
         parent = path_obj.parent
-
-        # Специальная обработка для корней Windows
-        if os.name == 'nt':
-            # Проверяем, является ли путь корневым
-            drive = path_obj.drive
-            parts = path_obj.parts
-
-            # C:\ → C:\
-            if drive and len(parts) == 2 and parts[1] == '\\':
-                return str(path_obj)
-
-        # Преобразуем в строку
         parent_str = str(parent)
 
-        # Если это текущая директория, возвращаем пустую строку
-        if parent_str == '.':
-            return ''
-
+        # Path('.').parent returns '.' – keep it as is
         return parent_str
-
     except Exception:
-        # В случае ошибки возвращаем пустую строку
+        # Return empty string on any unexpected error (e.g. malformed path)
         return ''
 
 
 def safe_windows_listdir(path: PathString) -> List[str]:
-    '''Безопасное получение содержимого каталога в Windows'''
-    # TODO: Вернуть список элементов каталога или пустой список при ошибке
-    # Обрабатывать Windows-specific ошибки:
-    # - PermissionError (отказ в доступе)
-    # - FileNotFoundError
-    # - OSError для длинных путей
+    """
+    Safely list the contents of a directory on Windows.
+
+    Returns a list of full paths of all items in the directory.
+    On any error (permission, not found, path too long, etc.) returns an empty list.
+    """
     path_obj = Path(path)
-    exit_list = []
     try:
-        for child in path_obj.iterdir():
-            exit_list.append(str(child))
-    except PermissionError:
-        return 1
-    except FileNotFoundError:
-        return 2
-    except OSError:
-        return 3
-    return exit_list
+        # iterdir() yields Path objects; convert each to string (full path)
+        return [str(child) for child in path_obj.iterdir()]
+    except (PermissionError, FileNotFoundError, OSError):
+        # All expected Windows directory listing errors -> empty list
+        return []
 
 
 def is_hidden_windows_file(path: PathString) -> bool:
-    '''Проверка является ли файл скрытым в Windows
+    """
+    Check if a file or directory has the 'hidden' attribute set on Windows.
 
-    kernel32.dll — это основная системная библиотека (DLL) в Windows,
-    которая содержит ключевые функции операционной системы
-    для управления процессами, памятью, файлами, устройствами ввода-вывода
-    и другими низкоуровневыми операциями.
+    Uses GetFileAttributesW from kernel32.dll. Returns False if the file does
+    not exist, if the function fails, or if running on a non‑Windows platform.
+    Raises OSError if called on a non‑Windows system.
+    """
+    if not is_windows_os():
+        raise OSError('This function is only available on Windows.')
 
-    Если файл скрыт в системе, то True, если не скрыт, то False
+    path_str = str(path)
 
-    логика условия:
-    FILE_ATTRIBUTE_READONLY    = 0x1
-    FILE_ATTRIBUTE_HIDDEN      = 0x2
-    FILE_ATTRIBUTE_SYSTEM      = 0x4
-    FILE_ATTRIBUTE_DIRECTORY   = 0x10
-    FILE_ATTRIBUTE_ARCHIVE     = 0x20
-    т.е. с & выдаст True только при если файл не только скрытый.
-    '''
-    # TODO: Проверить атрибуты файла на наличие FILE_ATTRIBUTE_HIDDEN
-    # Использовать os.stat или ctypes для проверки атрибутов Windows
-    atr = ctypes.windll.kernel32.GetFileAttributesW(str(path))
-    if atr & 2:
-        return True
-    return False
+    # Retrieve file attributes
+    attrs = ctypes.windll.kernel32.GetFileAttributesW(path_str)
 
-# print(is_windows_os())
-# way = Path('C:\\Users\chirk\OneDrive\Рабочий стол\desktop.ini')
-# print(validate_windows_path(way), way.parts)
-# print(is_hidden_windows_file(way))
+    # Failure: file does not exist, access denied, etc.
+    if attrs == INVALID_FILE_ATTRIBUTES:
+        return False
+
+    # Check the hidden attribute bit (0x2)
+    return bool(attrs & FILE_ATTRIBUTE_HIDDEN)
